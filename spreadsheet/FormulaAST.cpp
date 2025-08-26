@@ -143,21 +143,26 @@ public:
     }
 
     double Evaluate(std::function<double(Position)>& args) const override {
+        // вычисляем операнд рекурсивно
+        double lhs_value = lhs_->Evaluate(args);
+        double rhs_value = rhs_->Evaluate(args); 
+
         switch (type_) {
-        case Add:
-            return lhs_->Evaluate(args) + rhs_->Evaluate(args);
-        case Subtract:
-            return lhs_->Evaluate(args) - rhs_->Evaluate(args);
-        case Multiply:
-            return lhs_->Evaluate(args) * rhs_->Evaluate(args);
-        case Divide:          
-            if (rhs_->Evaluate(args) != 0) {
-                return lhs_->Evaluate(args) / rhs_->Evaluate(args);   
-            } else {
+            case Add:
+                return lhs_value + rhs_value;
+            case Subtract:
+                return lhs_value - rhs_value;
+            case Multiply:
+                return lhs_value * rhs_value;
+            case Divide: {
+                if (std::isfinite(lhs_value / rhs_value)) {
+                    return lhs_value / rhs_value;
+                }
                 throw FormulaError(FormulaError::Category::Arithmetic);
-            }   
-        default:
-            throw std::invalid_argument("Unidentified operation type");
+            }    
+            default: {
+                throw std::invalid_argument("Unidentified operation type");
+            }
         }
     }
 
@@ -196,15 +201,16 @@ public:
     }
 
     double Evaluate(std::function<double(Position)>& args) const override {
-    switch (type_) {
-        case UnaryPlus:
-            return operand_->Evaluate(args);
-        case UnaryMinus:
-            return -operand_->Evaluate(args); 
-        default:
+        double operand_value = operand_->Evaluate(args); // вычисляем операнд рекурсивно
+
+        if (type_ == UnaryPlus) {
+            return operand_value;  // унарный плюс — просто возвращаем значение
+        } else if(type_ == UnaryMinus) {
+            return -operand_value; // унарный минус — меняем знак на противоположный
+        } else {
             throw std::invalid_argument("Unidentified operation type");
+        }
     }
-}
 
 private:
     Type type_;
